@@ -4,6 +4,8 @@
 	this ui library fork from Bracket V3 -- https://github.com/AlexR32/Bracket/blob/main/BracketV3.lua
 	i didnt really stick with 1 style i just did whatever i wanted at some parts used ai help bc im lazy -- https://github.com/nfpw
 	i forgot to add this section but some stuff generated from ai bc im lazy ass (chat-gpt) but mostly i did the stuff used it for fixes
+    
+    [MODIFIED FOR DYNAMIC TEXT UPDATES]
 ]]
 
 local Library = {
@@ -47,21 +49,6 @@ function Library:GetTextBounds(Text, Font, Size, Resolution)
 	local Bounds = TextService:GetTextSize(Text, Size, Font, Resolution or Vector2.new(1920, 1080))
 	return Bounds.X, Bounds.Y
 end -- credits linoria library
-
---[[
-local Assets = {
-	testicon = {
-		url = "https://ssss.png";
-		filename = "ssss.png";
-		rbxassetid = "rbxassetid://123456789";
-	};
-	HolderImage = {
-		url = "https://Holder.png";
-		filename = "Holder.png";
-		rbxassetid = "rbxassetid://2484276666";
-	};
-}
-]]
 
 local function requesturl(i, v)
 	if RunService:IsStudio() then
@@ -585,34 +572,6 @@ function Library:CreateWindow(Config: {
 		Library.Toggle = State
 	end
 
-	--[[local function UpdateUIGradients(rootInstance: Instance, updateCallback: (UIGradient) -> ())
-		local main = rootInstance:FindFirstChild("Main")
-		if main then
-			local holder = main:FindFirstChild("Holder")
-			if holder then
-				for _, descendant in next, holder:GetDescendants() do
-					if descendant:IsA("UIGradient") then
-						pcall(updateCallback, descendant)
-					end
-				end
-			end
-			local tContainer = main:FindFirstChild("TContainer")
-			if tContainer then
-				for _, descendant in next, tContainer:GetDescendants() do
-					if descendant:IsA("UIGradient") then
-						pcall(updateCallback, descendant)
-					end
-				end
-			end
-		end
-	end
-
-	table.insert(Library.Connections, RunService.RenderStepped:Connect(function(dt)
-		UpdateUIGradients(Screen, function(gradient)
-			gradient.Rotation = (gradient.Rotation + 45 * dt) % 360
-		end)
-	end))]]
-
 	local ReopenButton = crebutton(Screen, Main, Config, Toggle)
 
 	local SearchBar = Topbar.SearchBar
@@ -652,7 +611,6 @@ function Library:CreateWindow(Config: {
 		end)
 	)
 
-	--makedraggable(Topbar, Main)
 	makedraggable(Main, Main)
 
 	local Close = Topbar.Close
@@ -1068,6 +1026,11 @@ function Library:CreateWindow(Config: {
 	function WindowInit:ChangeColor(Color)
 		ChangeColor(Color)
 	end
+    
+    -- [ADDED] Method to change window title dynamically
+    function WindowInit:SetTitle(title)
+        Topbar.WindowName.Text = title
+    end
 
 	function WindowInit:Toggle(State)
 		Toggle(State)
@@ -1117,6 +1080,13 @@ function Library:CreateWindow(Config: {
 		TabButton.Parent = TBContainer
 		TabButton.Title.Text = Name
 		TabButton.BackgroundColor3 = Config.Color
+        
+        -- [ADDED] Method to change tab title dynamically
+        function TabInit:SetTitle(newTitle)
+            if TabButton and TabButton:FindFirstChild("Title") then
+                TabButton.Title.Text = newTitle
+            end
+        end
 
 		local Underline = TabButton.Underline
 		Underline.BackgroundColor3 = Config.Color
@@ -1246,6 +1216,18 @@ function Library:CreateWindow(Config: {
 				Name = Name,
 				TabParent = Tab,
 			}
+            
+            -- [ADDED] Method to change section title dynamically
+            function SectionInit:SetTitle(newTitle)
+                if Section and Section:FindFirstChild("Title") then
+                    Section.Title.Text = newTitle
+                    Section.Title.Size = UDim2.new(0, Section.Title.TextBounds.X + 10, 0, 2)
+                    if AllSections[Section] then
+                        AllSections[Section].Name = newTitle
+                    end
+                end
+            end
+
 			if string.find(Section.Parent.Name:lower(), "left") then
 				Section.Parent.Padding.PaddingRight = UDim.new(0, 3)
 			elseif string.find(Section.Parent.Name:lower(), "right") then
@@ -1359,6 +1341,17 @@ function Library:CreateWindow(Config: {
 				Button.Title.Text = Name
 				Button.Title.TextWrapped = WrapText or false
 				Library.Connections = Library.Connections or {}
+                
+                -- [ADDED] Method to change button text dynamically
+                function ButtonInit:SetText(newText)
+                    if Button and Button:FindFirstChild("Title") then
+                        Button.Title.Text = newText
+                        -- Recalculate size if not wrapping text (standard behavior for this lib)
+                        if not WrapText then
+                            Button.Size = UDim2.new(1, -10, 0, Button.Title.TextBounds.Y + 5)
+                        end
+                    end
+                end
 
 				if WrapText then
 					Button.Title.AutomaticSize = Enum.AutomaticSize.Y
@@ -1663,6 +1656,17 @@ function Library:CreateWindow(Config: {
 				TextBox.Size = UDim2.new(1, -10, 0, TextBox.Title.TextBounds.Y + 25)
 
 				Library.Connections = Library.Connections or {}
+                
+                -- [ADDED] Method to change TextBox title dynamically
+                function TextBoxInit:SetTitle(newTitle)
+                     if TextBox and TextBox:FindFirstChild("Title") then
+                        TextBox.Title.Text = newTitle
+                        if not WrapText then
+                            TextBox.Title.Size = UDim2.new(1, 0, 0, TextBox.Title.TextBounds.Y + 5)
+                            TextBox.Size = UDim2.new(1, -10, 0, TextBox.Title.TextBounds.Y + 25)
+                        end
+                     end
+                end
 
 				table.insert(Library.ColorTable, TextBox.Background)
 				table.insert(Library.ColorTable, TextBox.Title)
@@ -2030,6 +2034,15 @@ function Library:CreateWindow(Config: {
 				end
 
 				UpdateTitleSize()
+                
+                -- [ADDED] Method to change toggle text dynamically
+                function ToggleInit:SetTitle(newTitle)
+                    if Toggle and Toggle:FindFirstChild("Title") then
+                        Toggle.Title.Text = newTitle
+                        -- We must call the local UpdateTitleSize function to recalculate layout
+                        UpdateTitleSize()
+                    end
+                end
 
 				if InfoLocal then
 					local function ShowInfoTooltip()
@@ -2703,6 +2716,17 @@ function Library:CreateWindow(Config: {
 				Slider.Title.Size = UDim2.new(1, 0, 0, Slider.Title.TextBounds.Y + 5)
 				Slider.Size = UDim2.new(1, -10, 0, Slider.Title.TextBounds.Y + 15)
 				table.insert(Library.ColorTable, Slider.Slider.Bar)
+                
+                -- [ADDED] Method to change Slider title dynamically
+                function SliderInit:SetTitle(newTitle)
+                     if Slider and Slider:FindFirstChild("Title") then
+                        Slider.Title.Text = newTitle
+                        Slider.Title.Size = UDim2.new(1, 0, 0, Slider.Title.TextBounds.Y + 5)
+                        if not WrapText then
+                            Slider.Size = UDim2.new(1, -10, 0, Slider.Title.TextBounds.Y + 15)
+                        end
+                     end
+                end
 
 				Slider.Value.ClearTextOnFocus = false
 				Slider.Value.TextEditable = true
@@ -2982,6 +3006,18 @@ function Library:CreateWindow(Config: {
 				Dropdown.Size = UDim2.new(1, -10, 0, Dropdown.Title.TextBounds.Y + 25)
 				Dropdown.Container.Holder.Size = UDim2.new(1, -5, 0, 0)
 				Dropdown.Container.Holder.Visible = false
+                
+                -- [ADDED] Method to change Dropdown title dynamically
+                function DropdownInit:SetTitle(newTitle)
+                     if Dropdown and Dropdown:FindFirstChild("Title") then
+                        Dropdown.Title.Text = newTitle
+                        if not WrapText then
+                            Dropdown.Title.Size = UDim2.new(1, 0, 0, Dropdown.Title.TextBounds.Y + 5)
+                            Dropdown.Container.Position = UDim2.new(0, 0, 0, Dropdown.Title.TextBounds.Y + 5)
+                            Dropdown.Size = UDim2.new(1, -10, 0, Dropdown.Title.TextBounds.Y + 25)
+                        end
+                     end
+                end
 
 				local DropdownToggle = false
 				local SelectedOptions = {}
@@ -4181,6 +4217,16 @@ function Library:CreateWindow(Config: {
 				Colorpicker.Parent = Section.Container
 				Colorpicker.Title.Text = Name
 				Colorpicker.Size = UDim2.new(1, -10, 0, Colorpicker.Title.TextBounds.Y + 5)
+                
+                -- [ADDED] Method to change Colorpicker title dynamically
+                function ColorpickerInit:SetTitle(newTitle)
+                     if Colorpicker and Colorpicker:FindFirstChild("Title") then
+                        Colorpicker.Title.Text = newTitle
+                        if not WrapText then
+                            Colorpicker.Size = UDim2.new(1, -10, 0, Colorpicker.Title.TextBounds.Y + 5)
+                        end
+                     end
+                end
 
 				Pallete.Name = Name .. " P " .. shared.Anka.ElementCounter
 				Pallete.Parent = Screen
